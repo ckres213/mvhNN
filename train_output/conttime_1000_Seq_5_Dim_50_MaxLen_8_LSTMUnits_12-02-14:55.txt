@@ -1,0 +1,28 @@
+
+Training data: conttime_1000_Seq_5_Dim_50_MaxLen_8_LSTMUnits
+Learning rate: 0.01
+Max epochs: 15
+Sequence lengths: -1
+Batch size for train: 10
+Previous model: False
+
+Getting data takes: 0.26143455505371094 seconds
+You are using GPU acceleration.
+
+Number of GPU: 8
+The log likelihood per event at epochs 0 is -1.0844268973114692
+The log likelihood per event at epochs 1 is -1.0741706879889585
+The log likelihood per event at epochs 2 is -1.0712650358516433
+The log likelihood per event at epochs 3 is -1.0704759845358616
+The log likelihood per event at epochs 4 is -1.0691883840013934
+The log likelihood per event at epochs 5 is -1.0681577652773033
+The log likelihood per event at epochs 6 is -1.0674979984930486
+The log likelihood per event at epochs 7 is -1.067611828785576
+The log likelihood per event at epochs 8 is -1.0663555089554215
+The log likelihood per event at epochs 9 is -1.0664537928860485
+The log likelihood per event at epochs 10 is -1.0652546228665731
+The log likelihood per event at epochs 11 is -1.0650188903235938
+The log likelihood per event at epochs 12 is -1.0644507024166994
+The log likelihood per event at epochs 13 is -1.0645085979249103
+The log likelihood per event at epochs 14 is -1.063936406406559
+training takes 90.11564779281616 seconds

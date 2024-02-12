@@ -1,0 +1,12 @@
+
+Training data: conttime_100_Seq_2_Dim_100_MaxLen_8_LSTMUnits
+Learning rate: 0.01
+Max epochs: 2
+Sequence lengths: -1
+Batch size for train: 3
+Previous model: False
+
+Getting data takes: 0.0373384952545166 seconds
+CUDA is not Available. You are using CPU only.
+
+Number of cores: 16

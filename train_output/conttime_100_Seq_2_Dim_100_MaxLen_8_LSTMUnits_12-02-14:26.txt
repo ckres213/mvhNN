@@ -1,0 +1,15 @@
+
+Training data: conttime_100_Seq_2_Dim_100_MaxLen_8_LSTMUnits
+Learning rate: 0.01
+Max epochs: 2
+Sequence lengths: -1
+Batch size for train: 3
+Previous model: False
+
+Getting data takes: 0.0394740104675293 seconds
+CUDA is not Available. You are using CPU only.
+
+Number of cores: 16
+The log likelihood per event at epochs 0 is -1.8691867951312957
+The log likelihood per event at epochs 1 is -1.8293107767644594
+training takes 8.254554986953735 seconds
