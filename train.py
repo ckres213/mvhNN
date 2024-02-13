@@ -2,7 +2,7 @@ import argparse
 import utils
 import sys
 import os
-import datetime
+import datetime as dt
 import time
 from torch.utils.data import DataLoader
 import conttime
@@ -346,8 +346,8 @@ if __name__ == "__main__":
         accuracy = type_valid(dev_interarrival_seqs, dev_length_seqs, dev_event_types_seqs)
         type_accuracy_list.append(accuracy)
 
-    pdb.set_trace()
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
+    #pdb.set_trace()
+    current_time = dt.datetime.now().strftime("%H:%M")    
     figure, ax = plt.subplots(nrows=1, ncols=3, figsize=(16, 4))
     figure.suptitle(f"{dataset}'s Training Figure {current_time}")
     ax[0].set_xlabel("epochs")
