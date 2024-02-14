@@ -71,6 +71,7 @@ def type_valid(interarrival_seqs, length_seqs, event_types_seqs):
     # Looping over the number of dev sequences
     for i in range(num_dev_seqs):
         # Extracting interarrival times, event types and length of the i^th sequence
+        pdb.set_trace()
         interarrival_seq = interarrival_seqs[i:i+1]
         event_types_seq = event_types_seqs[i:i+1]
         length_seq = length_seqs[i]
@@ -83,11 +84,12 @@ def type_valid(interarrival_seqs, length_seqs, event_types_seqs):
         interarrival_seq = interarrival_seq[:, :length_seq+1]
         
         # Calculates hidden state from sequence (forward)
-        hidden_states, *_ = model(event_types_seq, interarrival_seq)
+        hidden_states, *_ = model.forward(event_types_seq, interarrival_seq)
         
         # Calculates intensity at final event? #cb
         lambda_all = F.softplus(model.hidden_lambda(hidden_states[-1]))
         lambda_sum = torch.sum(lambda_all, dim=-1)
+        
         # Probability????
         lambda_all = lambda_all / lambda_sum
         
@@ -333,7 +335,7 @@ if __name__ == "__main__":
         
         print(f"The log-likelihood per event at epochs {i} is {avg_log}")
         log.write(f"\nThe log likelihood per event at epochs {i} is {avg_log}")
-        print("model saved..")
+        print("model saved..")a
         
         torch.save(model, f"./models/{dataset}.pt")
 

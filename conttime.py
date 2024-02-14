@@ -4,7 +4,7 @@ import torch.nn as nn
 import pdb
 
 
-class Conttime(nn.Module): # Here is where you need to save the weights????
+class Conttime(nn.Module):
     def __init__(self, dim_process, lstm_units, scale = 0.1, learn_rate = 0.01):
         self.dim_process = dim_process
         self.lstm_units = lstm_units
@@ -20,14 +20,15 @@ class Conttime(nn.Module): # Here is where you need to save the weights????
         self.lstm_cell = CTLSTMCell.CTLSTMCell(lstm_units, scale)
         
         # Creates R^{hid_dim} -> R^{n_types} linear map. Is equivalent to the w_k^T vector for all k
-        self.hidden_lambda = nn.Linear(self.lstm_units, self.dim_process)
+        #self.hidden_lambda = nn.Linear(self.lstm_units, self.dim_process)
+        
+        self.hidden_lambda = nn.Linear(self.lstm_units, self.dim_process, bias=False)
 
         # Adam optimizer for training with the given learning rate
         # Parameters are emb.weight, lstm_cell.linear.weight, lstm_cell.linear.bias, hidden_lambda.weight, hidden_lambda.bias
         self.optimizer = torch.optim.Adam(self.parameters(), lr=learn_rate)
 
-    def train_batch(self, interarrival_seqs, event_types_seqs, sim_interarrival, total_duration_seqs, length_seqs, sim_interarrival_index):
-        
+    def train_batch(self, interarrival_seqs, event_types_seqs, sim_diffs_seqs, total_duration_seqs, length_seqs, sim_diffs_index):
         # Forward pass to get hidden states and cell states
         hidden_states, cell_gates, cell_bar_gates, decay_gates, output_gates = self.forward(event_types_seqs, interarrival_seqs)
         
@@ -38,10 +39,10 @@ class Conttime(nn.Module): # Here is where you need to save the weights????
                                                                                       decay_gates, 
                                                                                       output_gates,
                                                                                       event_types_seqs, 
-                                                                                      sim_interarrival, 
+                                                                                      sim_diffs_seqs, 
                                                                                       total_duration_seqs,
                                                                                       length_seqs, 
-                                                                                      sim_interarrival_index)
+                                                                                      sim_diffs_index)
         # Calculate negative log-likelihood loss for the batch
         loss = -(torch.sum(part_one_likelihood - part_two_likelihood))
         
@@ -108,15 +109,15 @@ class Conttime(nn.Module): # Here is where you need to save the weights????
         
         return hidden_states, cell_gates, cell_bar_gates, decay_gates, output_gates
 
-    def conttime_loss(self, hidden_states, cell_gates, cell_bar_gates, decay_gates, output_gates, event_types_seqs, sim_interarrival, total_duration_seqs, length_seqs,
-                      sim_interarrival_index):
+    def conttime_loss(self, hidden_states, cell_gates, cell_bar_gates, decay_gates, output_gates, event_types_seqs, sim_diffs_seqs, total_duration_seqs, length_seqs,
+                      sim_diffs_index):
         # Calculates likelihood values for each sequence in batch
         
         # Number of batches
         batch_size = event_types_seqs.shape[0]
         
         # Length of simulated sequence
-        sim_len = sim_interarrival_index.shape[1]
+        sim_len = sim_diffs_index.shape[1]
         
         # Initalizing Likelihood
         # The sum of the log-intensities of the events that happened, at the times they happened
@@ -168,16 +169,16 @@ class Conttime(nn.Module): # Here is where you need to save the weights????
         for idx in range(batch_size):
             
             # Finds value of gates of the original sequences at simulated index points???
-            layer_cell_gates = cell_gates[sim_interarrival_index[idx], idx, :]
+            layer_cell_gates = cell_gates[sim_diffs_index[idx], idx, :]
             sim_cell_gates.append(layer_cell_gates)
            
-            layer_cell_bar_gates = cell_bar_gates[sim_interarrival_index[idx], idx, :]
+            layer_cell_bar_gates = cell_bar_gates[sim_diffs_index[idx], idx, :]
             sim_cell_bar_gates.append(layer_cell_bar_gates)
             
-            layer_decay_gates = decay_gates[sim_interarrival_index[idx], idx, :]
+            layer_decay_gates = decay_gates[sim_diffs_index[idx], idx, :]
             sim_decay_gates.append(layer_decay_gates)
             
-            layer_output_gates = output_gates[sim_interarrival_index[idx], idx, :]
+            layer_output_gates = output_gates[sim_diffs_index[idx], idx, :]
             sim_output_gates.append(layer_output_gates)
         
         # Transforms sim_gates from a list of length batch_size with each object made up of sim_len lists of lstm_units to a tensor with dimensions sim_len x batch_size x lstm_units
@@ -189,13 +190,13 @@ class Conttime(nn.Module): # Here is where you need to save the weights????
         sim_hidden_list = []
         
         # Looping over each simulated event
-        for idx in range(sim_interarrival.shape[1]):
+        for idx in range(sim_diffs_seqs.shape[1]):
             # Calculates simulated hidden state at the idx^th event for each sequence in batch
             _, sim_hidden_t__i = self.lstm_cell.decay(sim_cell_gates[idx], 
                                                         sim_cell_bar_gates[idx],
                                                         sim_decay_gates[idx], 
                                                         sim_output_gates[idx], 
-                                                        sim_interarrival[:, idx])
+                                                        sim_diffs_seqs[:, idx])
 
             sim_hidden_list.append(sim_hidden_t__i)            
         

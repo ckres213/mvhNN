@@ -148,7 +148,6 @@ class HawkesGen(object):
             u = U * intensity_hazard / self.intensity[event_type]
 
             # "Adaptive thinning", decreases upper bound
-            # but it is closed when data is randomly generated at the beginning of this project #cb
             intensity_hazard = np.copy(self.intensity[event_type])
         return time_current
 
@@ -192,7 +191,6 @@ class HawkesGen(object):
             u = U * intensity_hazard / np.sum(self.intensity)
            
             # "Adaptive thinning", decreases upper bound
-            # but it is closed when data is randomly generated at the beginning of this project #cb
             intensity_hazard = np.sum(self.intensity)
         return time_current
 
@@ -333,7 +331,7 @@ class HawkesInhibGen(object):
         np.random.seed(generator_settings['seed'])
         
         if generator_settings['pretrain_model_path'] == None:
-        # Randomly selects parameter values (stationarity guranteed as alpha/delta < 1 #cb
+        # Randomly selects parameter values (stationarity guranteed as alpha/delta < 1
             self.dim_process = generator_settings['dim_process']
             
             self.mu = np.float32(
@@ -374,7 +372,7 @@ class HawkesInhibGen(object):
         # Initalizing intensity (background rate)
         self.intensity_tilde = np.copy(self.mu)
         
-        # Softplus to make intensity positive (In full code use function) #cb
+        # Softplus to make intensity positive (In full code use torch function) #cb
         self.intensity = np.log(np.float32(1.0) + np.exp(self.intensity_tilde))
         
         # Upper bounds for intensities
@@ -501,7 +499,7 @@ class HawkesInhibGen(object):
             # Select random value from Unif(0,1) distribution
             U = np.random.uniform(low=0.0, high=1.0, size=None) 
 
-            # Increase time by small increment (normalize???) #cb
+            # Increase time by small increment
             time_current += E / intensity_hazard
 
             # Recompute intensity given increment in time
@@ -510,9 +508,7 @@ class HawkesInhibGen(object):
             # Recompute u 
             u = U * intensity_hazard / self.intensity[event_type]
 
-            # "Adaptive thinning", decreases upper bound
-            # but it is closed when data is randomly generated at the beginning of this project #cb
-            
+            # "Adaptive thinning", decreases upper bound          
             self.compute_intensity_upper_bound(time_current)
             intensity_hazard = np.copy(self.intensity_ub[event_type])
         
@@ -557,9 +553,7 @@ class HawkesInhibGen(object):
             # Recomputes u 
             u = U * intensity_hazard / np.sum(self.intensity)
             
-            # "Adaptive thinning", decreases upper bound
-            # but it is closed when data is randomly generated at the beginning of this project this was coded out originally #cb
-            
+            # "Adaptive thinning", decreases upper bound            
             self.compute_intensity_upper_bound(time_current)
             intensity_hazard = np.sum(self.intensity_ub)
          
@@ -730,7 +724,7 @@ class NeuralHawkesCTLSTM(object):
                 )
             )
             
-             # The vector specifying the type of event, with the extra row for the first event #cb
+             # The vector specifying the type of event, with the extra row for the first event
             self.Emb_event = np.float32(
                 np.random.uniform(
                     low = -1.0,
@@ -880,25 +874,7 @@ class NeuralHawkesCTLSTM(object):
         return 1 / (1+np.exp(-x))
 
     
-    def compute_hidden_states(self):
-        # every time it is called,
-        # it computes the new hidden states of the LSTM
-        # it gets the last event in the sequence
-        # which is generated at t_(rec(t))
-        # and compute its hidden states
-        # Note : for this event, we get its type
-        # and time elapsed since last event
-        # that is to say, this func is different than
-        # rnn_unit in models
-        # THERE : event, time_since_this_event_to_next
-        # so first update, and then decay
-        # HERE : time_since_last_event, event
-        # so first decay, and then update
-        # Note : this should be called
-        # after one event is generated and appended
-        # so the state is updated accordingly
-        #TODO: decay #cb
-        
+    def compute_hidden_states(self):       
         interarrival = self.one_sequence[-1]['time_since_last_event']
         event_type = self.one_sequence[-1]['event_type']       
 
@@ -917,32 +893,33 @@ class NeuralHawkesCTLSTM(object):
         emb_event_t = self.Emb_event[event_type, :]
         
         # One single calculation for all the W_k_ + U_h(t_i) + d_
+        
         """
-        concatenated_input is a 1 x (2 * lstm_units) matrix. 
+        input_i is a 1 x (2 * lstm_units) matrix. 
         W_recur is a 2 * self.lstm_units, 7 * self.lstm_units
         b_recur is a 1 x 2 * self.lstm_units
         
-        post_transform is a 1 x 2 * self.lstm_units array which is split up into 7 parts
+        output_i is a 1 x 2 * self.lstm_units array which is split up into 7 parts
         """
-        
-        concatenated_input = np.concatenate((emb_event_t, hidden_t), axis=0)
-        post_transform = np.dot(concatenated_input, self.W_recur) + self.b_recur
+        # Inpu
+        input_i = np.concatenate((emb_event_t, hidden_t), axis=0)
+        output_i = np.dot(input_i, self.W_recur) + self.b_recur
 
        
-        # Splitting the post_transform tensor into \mathbf{i}_{i+1}, \mathbf{f}_{i+1}, \mathbf{z}_{i+1}, \mathbf{o}_{i+1} (5a), (5b), (5c), (5d) 
-        input_gate = self.sigmoid(post_transform[:self.lstm_units])
-        forget_gate = self.sigmoid(post_transform[self.lstm_units:2*self.lstm_units])
-        output_gate = self.sigmoid(post_transform[2*self.lstm_units:3*self.lstm_units])
-        cell_input_gate = np.tanh(post_transform[3*self.lstm_units:4*self.lstm_units])
+        # Splitting the output_i tensor into \mathbf{i}_{i+1}, \mathbf{f}_{i+1}, \mathbf{z}_{i+1}, \mathbf{o}_{i+1} (5a), (5b), (5c), (5d) 
+        input_gate = self.sigmoid(output_i[:self.lstm_units])
+        forget_gate = self.sigmoid(output_i[self.lstm_units:2*self.lstm_units])
+        output_gate = self.sigmoid(output_i[2*self.lstm_units:3*self.lstm_units])
+        cell_input_gate = np.tanh(output_i[3*self.lstm_units:4*self.lstm_units])
         
         
         # Target input and forget gates \overline{\mathbf{i}}_{i+1}, \overline{\mathbf{f}}_{i+1}
-        input_bar_gate = self.sigmoid(post_transform[4*self.lstm_units:5*self.lstm_units])
-        forget_bar_gate = self.sigmoid(post_transform[5*self.lstm_units:6*self.lstm_units])
+        input_bar_gate = self.sigmoid(output_i[4*self.lstm_units:5*self.lstm_units])
+        forget_bar_gate = self.sigmoid(output_i[5*self.lstm_units:6*self.lstm_units])
         
         
         # Cell memory decay \mathbf{delta}_{i+1} (6c)
-        decay_gate = self.soft_relu(post_transform[6*self.lstm_units:])
+        decay_gate = self.soft_relu(output_i[6*self.lstm_units:])
         
         
         # Cell and target cell values \mathbf{c}_{i+1}, \overline{\mathbf{c}}_{i+1} (6a) and (6b)
@@ -983,33 +960,7 @@ class NeuralHawkesCTLSTM(object):
     def compute_intensity_upper_bound(self, time_current):
         # Vector of ones to calculate outer products with (outer product u ⊗ v = uv^T)
         ones = np.ones((self.dim_process, ), dtype=dtype)
-        
-        """
-        #cb
-        In equation (4), each summand wkdhd(t) = wkd · oid · (2σ(2cd(t)) − 1) is upperbounded by maxc∈{cid,c¯id} wkd · oid .(2σ(2c) − 1). Note that the coefficients αki,k and wkd may be either positive or negative
-    2
-        By same reasoning calculate w * o * tanh(c) at c and bar{c} 
-        """
             
-        # compute the upper bound of intensity
-        # at the current time
-        # Note : this is very tricky !!!
-        # in decomposable process, finding upper bound is easy
-        # see B.3 in NIPS paper
-        # but in neural model
-        # it is not a combo of POSITIVE decreasing funcs
-        # So how to do this?
-        # we find the functon is a sum of temrs
-        # some terms are decreasing, we keep them
-        # some terms are increasing, we get their upper-limit
-        #
-        # In detail, we compose it to 4 parts :
-        # (dc = c-c_target)
-        # w + dc -  increasing
-        # w + dc +  decreasing
-        # w - dc -  decreasing
-        # w - dc +  increasing
-        #      
         time_recent = self.one_sequence[-1]['time_since_start']
         
         # \mathbf{c}_{i+1} - \overline{\mathbf{c}}_{i+1}. exp(...) will not change sign of this matrix
@@ -1018,7 +969,9 @@ class NeuralHawkesCTLSTM(object):
         # Matrix where each column is cell_gap so that it conforms with W_alpha which is a lstm_units x dim_process matrix
         cell_gap_matrix = np.outer(cell_gap, ones)
         
-        # Booleans to indicate index increasing #cb shouldnt this have gate output there as well?
+        
+        pdb.set_trace() #cb rename this 
+        # Booleans to indicate index increasing 
         index_increasing_0 = (cell_gap_matrix > 0.0) & (self.W_alpha < 0.0)
         index_increasing_1 = (cell_gap_matrix < 0.0) & (self.W_alpha > 0.0)
         
@@ -1084,9 +1037,7 @@ class NeuralHawkesCTLSTM(object):
             # Recompute u 
             u = U * intensity_hazard / self.intensity[event_type]
 
-            # "Adaptive thinning", decreases upper bound
-            # but it is closed when data is randomly generated at the beginning of this project #cb
-            
+            # "Adaptive thinning", decreases upper bound           
             self.compute_intensity_upper_bound(time_current)
             intensity_hazard = np.copy(self.intensity_ub[event_type])
         return time_current
@@ -1130,9 +1081,7 @@ class NeuralHawkesCTLSTM(object):
             # Recomputes u 
             u = U * intensity_hazard / np.sum(self.intensity)
             
-            # "Adaptive thinning", decreases upper bound
-            # but it is closed when data is randomly generated at the beginning of this project this was coded out originally #cb
-            
+            # "Adaptive thinning", decreases upper bound           
             self.compute_intensity_upper_bound(time_current)
             intensity_hazard = np.sum(self.intensity_ub)
             
